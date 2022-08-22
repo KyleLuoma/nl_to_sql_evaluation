@@ -1,10 +1,11 @@
 import os
+import json
 import sqlite3
 import ibm_db
 import pandas as pd
 
 spider_root = "//192.168.1.17/data/nl_benchmarks/spider/database/"
-os.chdir(spider_root)
+# os.chdir(spider_root)
 
 def build_table_creation_sql(table_name, col_df):
     primary_keys = col_df.where(col_df[5] >= 1).dropna(how = "all")
@@ -26,7 +27,7 @@ def build_table_creation_sql(table_name, col_df):
         if ("TEXT" in data_type or "CHAR" in data_type) and col[6] >= 1: #text and is pk
             data_type = "VARCHAR(64)"
         if ("TEXT" in data_type or "CHAR" in data_type) and col[6] == 0: #text and not pk
-            data_type = "CLOB"
+            data_type = "VARCHAR(512)"
         if "BIT" in data_type:
             data_type = "SMALLINT"
         if "BOOL" in data_type:
@@ -102,8 +103,10 @@ select * from sqlite_schema where type = 'table' order by name;
 column_info = """
 pragma table_info('{}')
 """
-
-db2_con = ibm_db.connect("DATABASE=KYLE;HOSTNAME=localhost;PORT=25000;PROTOCOL=TCPIP;UID=KYLEL;PWD=ZAro^@wu22;", "", "")
+f = open('./.local/db2.json')
+db2_params = json.load(f)
+f.close()
+db2_con = ibm_db.connect(db2_params['db2_connect_params'], "", "")
 # ibm_db.exec_immediate(db2_con, "CREATE TABLE IF NOT EXISTS Activity (actid INTEGER PRIMARY KEY NOT NULL, activity_name varchar(25))")
 
 # Use to skip already completed dbs:
