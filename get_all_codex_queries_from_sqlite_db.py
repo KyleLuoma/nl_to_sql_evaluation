@@ -2,13 +2,8 @@ import sqlite3
 import pandas as pd
 
 
-
 def to_file(filename):
-    con = sqlite3.connect('codex_queries.sqlite')
-    cur = con.cursor()
-    res = cur.execute('select * from codex_queries')
-    rows = res.fetchall()
-    pd.DataFrame(rows).to_excel(filename)
+    pd.DataFrame(as_dataframe()).to_excel(filename)
 
 def as_dataframe():
     con = sqlite3.connect('codex_queries.sqlite')
@@ -20,9 +15,12 @@ def as_dataframe():
             d.question as question,
             q.prompt as prompt,
             q.gold_query as gold_query,
-            q.codex_query as codex_query
+            t.gold_translated as gold_translated,
+            q.codex_query as codex_query,
+            t.codex_translated as codex_translated
         from codex_queries q
         natural join dev d
+        left join translated t on q.query_id = t.query_id
         """)
     rows = res.fetchall()
     return pd.DataFrame(rows, columns = [
@@ -31,5 +29,9 @@ def as_dataframe():
         'question',
         'prompt',
         'gold_query',
-        'codex_query'
+        'gold_translated',
+        'codex_query',
+        'codex_translated'
     ])
+
+to_file("./explained_queries.xlsx")

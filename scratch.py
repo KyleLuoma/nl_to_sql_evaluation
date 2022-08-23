@@ -11,32 +11,10 @@ f.close()
 con = sqlite3.connect('codex_queries.sqlite')
 cur = con.cursor()
 # res = cur.execute('select * from codex_queries')
-cur.execute('drop table dev')
 res = cur.execute("""
-create table dev(
-    query_id INT,
-    db_id VARCHAR(64),
-    query VARCHAR(1024),
-    question VARCHAR(1024)
-)
+select * from translated
 """)
-con.commit()
-query_id = 10000
-for query in dev:
+print(res.fetchall())
 
-    insert_string = """
-    insert into dev(query_id, db_id, question) values(
-        {}, '{}', '{}'
-    )
-    """.format(
-        str(query_id),
-        str(query['db_id']),
-        str(query['question'].replace("'", "''"))
-    )
-    print(insert_string)
-    res = cur.execute(insert_string)
-    con.commit()
-
-    query_id += 1
 
 
