@@ -1,10 +1,11 @@
-import os
 import json
 import sqlite3
 import ibm_db
 import psycopg2
 import pandas as pd
 from collections import defaultdict
+
+
 
 class db_connector:
     def __init__(self):
@@ -13,6 +14,29 @@ class db_connector:
         pass
     def close_connection(self):
         pass
+
+
+
+class sqlite_connector(db_connector):
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+        self.con = sqlite3.connect(self.db_path)
+        self.con.text_factory = lambda b: b.decode(errors = 'ignore')
+        self.cur = self.con.cursor()
+
+    def do_query(self, query):
+        res = self.cur.execute(query)
+        if self.cur.description != None:
+            columns = [desc[0] for desc in self.cur.description]
+            rows = res.fetchall()
+            result_df = pd.DataFrame(data = rows, columns = columns)
+        else:
+            result_df = pd.DataFrame()
+        self.con.commit()
+        return result_df
+
+
     
 class db2_connector(db_connector):
 

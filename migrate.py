@@ -133,6 +133,8 @@ def do_migration(spider_root, target_db_type = 'db2', schema_only = False,
     elif target_db_type == 'postgresql':
         target_con = db_connector.postgresql_connector()
 
+    assert sqlite_to_level in ['schema', 'database']
+
     table_retrieval = """
     select * from sqlite_schema where type = 'table' order by name;
     """
@@ -166,7 +168,7 @@ def do_migration(spider_root, target_db_type = 'db2', schema_only = False,
                 try:
                     target_con.do_query("create schema " + schema_name)
                 except:
-                    print("Schema", schema_name, "already exists")
+                    print(sqlite_to_level, schema_name, "already exists")
 
                 if target_db_type == 'db2':
                     set_schema = "set current schema = "
@@ -235,7 +237,7 @@ def do_migration(spider_root, target_db_type = 'db2', schema_only = False,
     target_con.close_connection()
 
 if __name__ == "__main__":
-    do_migration(spider_root, 'postgresql', True, start_with_db='academic')
+    do_migration(spider_root, 'postgresql', False, start_with_db='academic')
 
 
 

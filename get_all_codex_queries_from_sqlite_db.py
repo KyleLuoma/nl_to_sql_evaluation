@@ -34,4 +34,5 @@ def as_dataframe():
         'codex_translated'
     ])
 
-to_file("./explained_queries.xlsx")
+if __name__ == "__main__":
+    to_file("./explained_queries.xlsx")

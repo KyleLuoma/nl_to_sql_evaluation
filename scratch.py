@@ -1,20 +1,14 @@
-import sqlite3
+
 import pandas as pd
-import json
+import db_connector
 
-spider_root = "//192.168.1.17/data/nl_benchmarks/spider/"
+db = db_connector.sqlite_connector("//192.168.1.17/data/nl_benchmarks/spider/database/aircraft/aircraft.sqlite")
 
-f = open(spider_root + 'dev.json')
-dev = json.load(f)
-f.close()
+resdf = db.do_query("select * from pilot")
+print(resdf.iloc[0].values)
 
-con = sqlite3.connect('codex_queries.sqlite')
-cur = con.cursor()
-# res = cur.execute('select * from codex_queries')
-res = cur.execute("""
-select * from translated
-""")
-print(res.fetchall())
+for val in resdf.iloc[0]:
+    print(val)
 
 
-
+print([1, 2, 3] == [1, 3, 2])
