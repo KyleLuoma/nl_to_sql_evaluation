@@ -70,28 +70,34 @@ for query in queries.itertuples():
 # sqlite database:
 explain_statement_query = """
 select
-    es_gold.query_id, 
+    case
+        when es_gold.query_id IS NULL then es_codex.query_id
+        when es_codex.query_id IS NULL then es_gold.query_id
+        else es_gold.query_id
+    end as query_id,
     es_gold.statement_text as gold_translated,
     es_codex.statement_text as codex_translated
 from (
-    select 
+    select
         queryno as query_id,
         statement_text
     from systools.explain_statement
-    where 
+    where
         explain_level = 'P'
+        and queryno >= 10000
         and queryno < 20000
 ) as es_gold
-join(
+full outer join(
     select
         queryno - 10000 as query_id,
         statement_text
     from systools.explain_statement
-    where 
+    where
         explain_level = 'P'
-        and queryno >= 20000    
-) as es_codex 
+        and queryno >= 20000
+) as es_codex
 on es_codex.query_id = es_gold.query_id
+order by query_id
 """
 stmt = ibm_db.exec_immediate(db2_con, explain_statement_query)
 dictionary = ibm_db.fetch_assoc(stmt)
@@ -119,8 +125,14 @@ while dictionary != False:
     codex = dictionary['CODEX_TRANSLATED']
 
     for symbol in [("'", "''"), ("%", "")]:
-        gold = gold.replace(symbol[0], symbol[1])
-        codex = codex.replace(symbol[0], symbol[1])
+        if gold != None:
+            gold = gold.replace(symbol[0], symbol[1])
+        else:
+            gold = ''
+        if codex != None:
+            codex = codex.replace(symbol[0], symbol[1])
+        else:
+            codex = ''
 
     query_cur.execute("""
         insert into translated(query_id, gold_translated, codex_translated)

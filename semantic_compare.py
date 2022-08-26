@@ -128,8 +128,8 @@ for row in codex_df.itertuples():
     codex_list = [str(i) for i in codex_results.iloc[0].values]
     codex_list.sort()
     for gold_row in gold_results.iterrows():
-        gold_list = [str(i) for i in codex_row[1].values]
-        codex_list.sort()
+        gold_list = [str(i) for i in gold_row[1].values]
+        gold_list.sort()
         if gold_list == codex_list:
             gold_matched_codex_row = True
     if not gold_matched_codex_row:
