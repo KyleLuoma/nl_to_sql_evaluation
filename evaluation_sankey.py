@@ -108,7 +108,7 @@ fig = go.Figure(data=[go.Sankey(
       color = node_colors
     ),
     # link = semantic_first 
-    link = syntactic_first
+    link = semantic_first
 )])
 
 fig.update_layout(title_text="CODEX Generated Spider Query Evaluation", font_size=10)

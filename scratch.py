@@ -1,10 +1,15 @@
 
-import pandas as pd
-import numpy as np
-import db_connector
-import get_all_codex_queries_from_sqlite_db as get_codex
+import cosette_caller
 
-df = get_codex.as_dataframe()
+program = """
+schema schema_Other_Available_Features(??);
+table Other_Available_Features(schema_Other_Available_Features);
 
-df = df.replace({None: ''})
-print(df)
+query q1 `SELECT count(o.*) FROM Other_Available_Features o`;
+
+query q2 `SELECT  COUNT(o.*) FROM Other_Available_Features o`;
+
+verify q1 q2;
+"""
+
+cosette_caller.call_cosette(program)
