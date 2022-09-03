@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 
 db_con = db_connector.sqlite_connector('./codex_queries.sqlite')
 
+# Get counts of semantic comparison results:
 sem_res_df = db_con.do_query("""
 select semantic_comparison_match, count(query_id) 
 from semantic_evaluation 
@@ -13,6 +14,7 @@ group by semantic_comparison_match
 """)
 sem_res_df.set_index(['semantic_comparison_match'], inplace = True)
 
+# Get counts of syntactic comparison results
 syn_res_df = db_con.do_query("""
 select is_match, count(distinct query_id)
 from syntactic_evaluation
@@ -20,10 +22,12 @@ group by is_match
 """)
 syn_res_df.set_index(['is_match'], inplace = True)
 
+# Get counts of cosette comparison results (not very useful)
 cosette_res_df = db_con.do_query("""
 select result, count(*) from cosette_results group by result
 """)
 
+# Get pivot of semantic comparison -> db2 syntactic comparison with counts
 res_df = db_con.do_query("""
 select semantic_comparison_match, is_match, count(distinct sem.query_id) as qry_count
 from semantic_evaluation sem
@@ -32,6 +36,21 @@ group by semantic_comparison_match, is_match;
 """)
 print(res_df)
 res_df.set_index(['semantic_comparison_match', 'is_match'], inplace = True)
+
+# Query to get a pivot of semantic -> db2 -> manual syntax matching with counts
+sem_man_db2_q = """
+select semantic_comparison_match, db2.is_match as db2_match, manual.is_match as manual_match, count(db2.query_id)
+from (select se.query_id, se.is_match, se.result_reason
+      from syntactic_evaluation se
+      where se.query_id not in (select query_id from syntactic_evaluation_manual)
+      union
+      select sm.query_id, sm.is_match, sm.result_reason
+      from syntactic_evaluation_manual sm) as manual
+join syntactic_evaluation db2 on db2.query_id = manual.query_id
+join semantic_evaluation s on db2.query_id = s.query_id
+group by semantic_comparison_match, db2.is_match, manual.is_match
+;
+"""
 
 labels = [
     "Questions",
