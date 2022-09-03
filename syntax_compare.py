@@ -2,7 +2,7 @@ import db_connector
 import get_all_codex_queries_from_sqlite_db as get_codex
 import pandas as pd
 
-codex_df = get_codex.as_dataframe()
+codex_df = get_codex.as_dataframe(include_translated=True)
 spider_root = "//192.168.1.17/data/nl_benchmarks/spider/"
 codex_db_con = db_connector.sqlite_connector('./codex_queries.sqlite')
 

@@ -20,6 +20,10 @@ group by is_match
 """)
 syn_res_df.set_index(['is_match'], inplace = True)
 
+cosette_res_df = db_con.do_query("""
+select result, count(*) from cosette_results group by result
+""")
+
 res_df = db_con.do_query("""
 select semantic_comparison_match, is_match, count(distinct sem.query_id) as qry_count
 from semantic_evaluation sem
@@ -28,16 +32,19 @@ group by semantic_comparison_match, is_match;
 """)
 print(res_df)
 res_df.set_index(['semantic_comparison_match', 'is_match'], inplace = True)
-print(res_df.loc['FALSE', 'FALSE'][0])
 
 labels = [
     "Questions",
     "Semantic - No Match",
     "Semantic - Match",
     "Semantic - Undetermined",
-    "Syntactic - No Match",
-    "Syntactic - Match",
-    "Syntactic - Undetermined",
+    "DB2 Syntactic - No Match",
+    "DB2 Syntactic - Match",
+    "DB2 Syntactic - Undetermined",
+    "MAN Syntactic - Match",
+    "MAN Syntactic - No Match",
+    "FIN Syntactic - Match",
+    "FIN Syntactic - No Match"
 ]
 
 match_color =           "rgba(1, 54, 15, 0.8)"
@@ -62,21 +69,26 @@ node_colors = [
     undetermined_color,             # "Syntactic - Undetermined"
 ]
 
+print(sem_res_df)
+
+
 #Display semantic matches first, then syntactic
 semantic_first = {
-    "source" : [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3], 
-    "target" : [1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6],
+    "source" : [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 7, 8], 
+    "target" : [1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 7, 8, 9, 10],
     "value"  : [
         sem_res_df.loc['FALSE'][0], sem_res_df.loc['TRUE'][0], sem_res_df.loc['UNDETERMINED'][0], 
         res_df.loc['FALSE', 'FALSE'], res_df.loc['FALSE', 'TRUE'], res_df.loc['FALSE', 'UNDETERMINED'],
         res_df.loc['TRUE', 'FALSE'], res_df.loc['TRUE', 'TRUE'], res_df.loc['TRUE', 'UNDETERMINED'],
-        res_df.loc['UNDETERMINED', 'FALSE'], res_df.loc['UNDETERMINED', 'TRUE'], res_df.loc['UNDETERMINED', 'UNDETERMINED']
+        res_df.loc['UNDETERMINED', 'FALSE'], res_df.loc['UNDETERMINED', 'TRUE'], 0,
+        285, 50
         ],
     "color"  : [
         to_nomatch, to_match, to_udt,
         to_nomatch, nomatch_to_match, to_udt,
         match_to_nomatch, to_match, to_udt,
-        match_to_nomatch, udt_to_match, to_udt
+        match_to_nomatch, udt_to_match, to_udt,
+        to_match, to_nomatch
     ]
 }
 
@@ -84,7 +96,7 @@ syn_order = [
         syn_res_df.loc['FALSE'][0], syn_res_df.loc['TRUE'][0], syn_res_df.loc['UNDETERMINED'][0],
         res_df.loc['FALSE', 'FALSE'], res_df.loc['TRUE', 'FALSE'], res_df.loc['UNDETERMINED', 'FALSE'],
         res_df.loc['FALSE', 'TRUE'], res_df.loc['TRUE', 'TRUE'], res_df.loc['UNDETERMINED', 'TRUE'],
-        res_df.loc['FALSE', 'UNDETERMINED'], res_df.loc['TRUE', 'UNDETERMINED'], res_df.loc['UNDETERMINED', 'UNDETERMINED']
+        res_df.loc['FALSE', 'UNDETERMINED'], res_df.loc['TRUE', 'UNDETERMINED'], 0
     ]
 
 syntactic_first = {

@@ -21,7 +21,11 @@ db2_params = json.load(f)
 f.close()
 db2_con = ibm_db.connect(db2_params['db2_connect_params'], "", "")
 
-queries = get_queries.as_dataframe()
+queries = get_queries.as_dataframe(include_translated = False, repaired = True)
+
+f = open('./queries/reset_db2_explain.sql')
+explain_reset_query = f.read()
+f.close()
 
 #DB2 explain syntax:
 # explain all set queryno=<INT> for <QUERY>
@@ -29,7 +33,6 @@ queries = get_queries.as_dataframe()
 f = open(spider_root + 'dev.json')
 dev = json.load(f)
 f.close()
-
 
 # Gold query explanations will have query id in 1xxxx range
 # Codex query explanations will be in 2xxxx range, where xxxx corresponds to the query id

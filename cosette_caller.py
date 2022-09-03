@@ -8,7 +8,14 @@ import json
 import requests
 
 spider_root = "//192.168.1.17/data/nl_benchmarks/spider/"
+codex_db = db_connector.sqlite_connector('./codex_queries.sqlite')
 
+try:
+    codex_db.do_query('drop table cosette_results')
+except:
+    pass
+
+codex_db.do_query('create table cosette_results(query_id int, result varchar(64))')
 
 def call_cosette(program):
 
@@ -21,6 +28,7 @@ def call_cosette(program):
     print(response.json()['result'])
     if response.json()['result'] == 'ERROR':
         print(response.json()['error_msg'])
+    return response.json()['result']
 
     # Response format:
     # {
@@ -162,13 +170,31 @@ if __name__ == "__main__":
                         tables[where_table_name] = where_column_names
                     print(tables)
 
-        codex_query = row.codex_query
+        codex_query = row.codex_query.upper()
+        gold_query = gold_query.upper()
+
+        while "( " in codex_query or " )" in codex_query:
+            codex_query = codex_query.replace("( ", "(")
+            codex_query = codex_query.replace(" )", ")")
+        while "( " in gold_query or " )" in gold_query:
+            gold_query = gold_query.replace("( ", "(")
+            gold_query = gold_query.replace(" )", ")")
+
+        codex_query = codex_query.replace('UNION', 'UNION ALL')
+        gold_query = gold_query.replace('UNION', 'UNION ALL')
 
         # Do table name dotted id generation for both queries:
         for table in tables:
+            table_u = table.upper()
+            alias = table_u[0] + table_u[len(table_u) - 2:].upper()
+            gold_query = gold_query.replace(' ' + table_u, ' ' + table_u + ' AS ' + alias + ' ')
+            codex_query = codex_query.replace(' ' + table_u, ' ' + table_u + ' AS ' + alias + ' ')
             for column in tables[table]:
-                gold_query = gold_query.replace(column, table + '.' + column)
-                codex_query = codex_query.replace(column, table + '.' + column)
+                col_u = column.upper()
+                gold_query = gold_query.replace(' ' + col_u, ' ' + alias + '.' + col_u + ' ')
+                gold_query = gold_query.replace('(' + col_u + ')', '(' + alias + '.' + col_u + ') AS ' + col_u[0:2])
+                codex_query = codex_query.replace(' ' + col_u, ' ' + alias + '.' + col_u + ' ')
+                codex_query = codex_query.replace('(' + col_u + ')', '(' + alias + '.' + col_u + ') AS ' + col_u[0:2])
         print('GOLD QUERY:', gold_query)
         print('CODEX QUERY:', codex_query)
 
@@ -221,22 +247,13 @@ if __name__ == "__main__":
 
         print(program)
 
+        result = call_cosette(program)
+        codex_db.do_query("insert into cosette_results values({}, '{}')".format(str(row.query_id), result))
+
         q_ct += 1
 
 
-    cosette_program = """
-    schema s1(Singer_ID:int, Name:str, Country:str);       -- schema declaration
 
-    table singer(s1);                   -- table a of schema s1
-
-    query q1                       -- query 1 on table a
-    `SELECT s.Singer_ID FROM singer s`;
-
-    query q2                       -- query 2 on table a
-    `SELECT s.Name FROM singer s`;
-
-    verify q1 q2;                  -- does q1 equal to q2?
-    """
 
 
 
