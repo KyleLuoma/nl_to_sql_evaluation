@@ -90,9 +90,11 @@ for row in codex_df.itertuples():
         )
         continue
 
-    if codex_results.shape[1] != gold_results.shape[1]:
+    # Check if codex columns are fewer than gold.
+    # If codex is higher than gold, it's still possible that the question was answered.
+    if codex_results.shape[1] < gold_results.shape[1]:
         record_evaluation(
-            table_name, codex_db_con, row.query_id, 'FALSE', 'asymmetrical column result size'
+            table_name, codex_db_con, row.query_id, 'FALSE', 'Insufficient number of columns in codex result set'
         )
         continue
 
@@ -116,6 +118,12 @@ for row in codex_df.itertuples():
         max_values = 0
 
         try:
+            # Pair up matching columns in gold and codex results. This allows us to 
+            # handle cases where the columns are in different orders, and may also
+            # have different names. 
+            # It's not sufficient for full evaluation because we're only sorting
+            # Individual columns; but we pair up the columns here
+            # and do a full dataframe comparison next.
             for codex_col_name in codex_results.columns:
                 for gold_col_name in gold_results.columns:
 
@@ -166,6 +174,9 @@ for row in codex_df.itertuples():
 
         col_matches = 0
 
+        # Using the sorted dataframes, sorted by the most unique columns, we can no
+        # compare individual records in each column. If any column does not match,
+        # then the result sets are not semantically equivalent.
         for codex_col_ix in range(0, codex_results.shape[1]):
             for gold_col_ix in range(0, gold_results.shape[1]):
                 col_matched = True
@@ -178,7 +189,7 @@ for row in codex_df.itertuples():
                     break
             print("col_matches", col_matches)
                 
-        if col_matches != codex_results.shape[1]:
+        if col_matches != gold_results.shape[1]:
             match = False
             notmatched_message = "full tuple compare failed"
 
