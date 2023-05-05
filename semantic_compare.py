@@ -109,67 +109,46 @@ for row in codex_df.itertuples():
     if full_compare:
 
         print("Performing full comparison")
-        
-        # Columns may have different names
-        # Columns may be in different orders
-
-        num_matched_columns = 0
-        encountered_type_error = False
         match = True
+        try:
+            codex_results = codex_results.sort_values(by = codex_results.columns[0])
+            gold_results = gold_results.sort_values(by = gold_results.columns[0])
+        except:
+            pass
 
-        codex_gold_column_map = {}
+        col_matches = 0
 
-        for c_column in codex_results.columns:
-            try:
-                sorted_codex_series = codex_results[c_column].astype('str').sort_values()
-                for g_column in gold_results.columns:
-                    sorted_gold_series = gold_results[g_column].astype('str').sort_values()
-                    if sorted_codex_series.equals(sorted_gold_series):
-                        num_matched_columns += 1
-                        codex_gold_column_map[c_column] = g_column
-                        
-            except TypeError as type_error:
-                encountered_type_error = True
-
-        if num_matched_columns != codex_results.shape[1]:
+        for codex_col_ix in range(0, codex_results.shape[1]):
+            for gold_col_ix in range(0, gold_results.shape[1]):
+                col_matched = True
+                for i in range(0, codex_results.shape[0]):
+                    if str(codex_results.iloc[i, codex_col_ix]) != str(gold_results.iloc[i, gold_col_ix]):
+                        col_matched = False
+                        break
+                if col_matched:
+                    col_matches += 1
+                    break
+                
+        if col_matches != codex_results.shape[1]:
             match = False
+            notmatched_message = "full tuple compare failed"
 
-        if match:
-        # Create equivalent column sort orders for codex and gold results
-        # get codex_gold_column_map keys as a list:
-
-            codex_results.sort_values(by = list(codex_gold_column_map.keys()), inplace = True)
-            gold_results.sort_values(by = list(codex_gold_column_map.values()), inplace = True)
-
-            # iterate through columns in both dataframes and compare the series:
-            for codex_column, gold_column in codex_gold_column_map.items():
-                codex_series = codex_results[codex_column]
-                gold_series = gold_results[gold_column]
-                if not codex_series.equals(gold_series):
-                    match = False
-
-        if encountered_type_error:
+        if not match:
             record_evaluation(
-                table_name, codex_db_con, row.query_id, 'UNDETERMINED', 'type error'
+                table_name, codex_db_con, row.query_id, 'FALSE', notmatched_message
             )
-            continue
-        elif not match:
-            record_evaluation(
-                table_name, codex_db_con, row.query_id, 'FALSE', 'full tuple compare failed'
+            pd.concat(
+                [codex_results, gold_results], 
+                axis = 1, 
+                sort = False
+                ).to_excel(
+                './output/semantic-failure-result-sets/tuple-mismatch-q{}.xlsx'.format(row.query_id)
             )
-            #save dataframes as a multi-sheet excel file in output folder
-            with pd.ExcelWriter(
-                './output/semantic-failure-result-sets/semantic_equivalent_syntax_mismatch_query_{}.xlsx'.format(str(row.query_id))
-                , engine='xlsxwriter'
-                ) as writer:
-                codex_results.to_excel(writer, sheet_name='codex_results')
-                gold_results.to_excel(writer, sheet_name='gold_results')
-            continue
         else:
             record_evaluation(
                 table_name, codex_db_con, row.query_id, 'TRUE', 'full tuple compare succeeded'
             )
-            continue
+
 
     else:
         # For the first tuple in gold results, gold_results.iloc[0]
