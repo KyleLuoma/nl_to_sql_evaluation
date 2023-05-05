@@ -108,13 +108,61 @@ for row in codex_df.itertuples():
     # If we get through all rows of codex results and they all match, then semantically equivalent
     if full_compare:
 
-        print("Performing full comparison")
-        match = True
+        codex_gold_col_pairs = [] # List of tuples of (codex_col_name, gold_col_name) that match
+
+        codex_sort_by_col = codex_results.columns[0]
+        gold_sort_by_col = gold_results.columns[0]
+
+        max_values = 0
+
         try:
-            codex_results = codex_results.sort_values(by = codex_results.columns[0])
-            gold_results = gold_results.sort_values(by = gold_results.columns[0])
+            for codex_col_name in codex_results.columns:
+                for gold_col_name in gold_results.columns:
+
+                    codex_col_temp = codex_results[codex_col_name].copy().astype(str)
+                    gold_col_temp = gold_results[gold_col_name].copy().astype(str)
+                    
+                    codex_col_temp.sort_values(inplace = True, ignore_index = True)
+                    gold_col_temp.sort_values(inplace = True, ignore_index = True)
+
+                    print(gold_col_temp)
+                    print(codex_col_temp)
+
+                    if codex_col_temp.equals(gold_col_temp):
+                        codex_gold_col_pairs.append((codex_col_name, gold_col_name))
+                        print(codex_col_name, "Value counts:", codex_results[codex_col_name].value_counts().shape[0])
+                        if codex_results[codex_col_name].value_counts().shape[0] > max_values:
+                            max_values = codex_results[codex_col_name].value_counts().shape[0]
+                            codex_sort_by_col = codex_col_name
+                            gold_sort_by_col = gold_col_name
+
+        except TypeError as e:
+            print("TypeError", e)
+            record_evaluation(
+                table_name, codex_db_con, row.query_id, 'FALSE', 'type error in column comparison'
+            )
+            continue
+
+        print("Codex sorting column:", codex_sort_by_col)
+        print("Gold sorting column:", gold_sort_by_col)
+
+
+        print("Performing full comparison")
+        print("Sorting codex by", codex_sort_by_col)
+        print("Sorting gold by", gold_sort_by_col)
+        match = True
+        codex_results[codex_sort_by_col] = codex_results[codex_sort_by_col].astype(str)
+        gold_results[gold_sort_by_col] = gold_results[gold_sort_by_col].astype(str)
+        try:
+            codex_results = codex_results.sort_values(by = [codex_sort_by_col])
+            gold_results = gold_results.sort_values(by = [gold_sort_by_col])
         except:
-            pass
+            print("sorting failed")
+
+        print("CODEX:")
+        print(codex_results)
+        print("GOLD:")
+        print(gold_results)
 
         col_matches = 0
 
@@ -128,6 +176,7 @@ for row in codex_df.itertuples():
                 if col_matched:
                     col_matches += 1
                     break
+            print("col_matches", col_matches)
                 
         if col_matches != codex_results.shape[1]:
             match = False
